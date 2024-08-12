@@ -1,6 +1,8 @@
 import cvxpy as cv
 import numpy as np
 
+from chargingstation.settings import PRINT_SOLVER_INFO
+
 
 class PriceRegularizer:
     """
@@ -16,8 +18,8 @@ class PriceRegularizer:
     def __init__(self, N: int, r: int) -> None:
         """
         Inputs:
-            N: Horizon length.
-            r: Price vector length.
+            N:  Horizon length.
+            r:  Price vector length.
         """
         assert (N >= 0) and (r >= 0)
         self.N = N
@@ -36,7 +38,8 @@ class PriceRegularizer:
         self._set_cvx_cost()
 
         self.prob = cv.Problem(cv.Minimize(self.cost), self.cons)
-        # print("Price regularization problem is DCP:", self.prob.is_dcp())
+        if PRINT_SOLVER_INFO:
+            print("Price regularization problem is DCP:", self.prob.is_dcp())
         self.prob.solve(warm_start=False)
 
     def _set_cvx_variables(self) -> None:
@@ -50,9 +53,6 @@ class PriceRegularizer:
     def _update_cvx_parameters(
         self, A: np.ndarray, b: np.ndarray, c: np.ndarray
     ) -> None:
-        """
-        A x = b should be feasible.
-        """
         self.A.value = A
         self.b.value = b
         self.c.value = c
@@ -66,6 +66,15 @@ class PriceRegularizer:
     def solve_price_regularization(
         self, A: np.ndarray, b: np.ndarray, c: np.ndarray
     ) -> np.ndarray:
+        """
+        A x = b should be feasible.
+        Inputs:
+            A:  Constraint matrix.
+            b:  Constraint vector.
+            c:  Cost vector.
+        Outputs:
+            x_opt:  Optimal regularized vector.
+        """
         self._update_cvx_parameters(A, b, c)
         self.prob.solve(warm_start=False)
         x_opt = self.x.value

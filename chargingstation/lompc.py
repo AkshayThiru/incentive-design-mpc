@@ -1,34 +1,45 @@
+import warnings
 from dataclasses import dataclass
 
 import cvxpy as cv
 import numpy as np
 
-MIN_MAX_CHARGE = 0.5
-MAX_MAX_CHARGE = 0.9
-MAX_CHARGE_RATE = 0.25
+from chargingstation.settings import (LOMPC_SOLVER, MAX_BAT_CHARGE_RATE,
+                                      MAX_MAX_BAT_CHARGE, MIN_MAX_BAT_CHARGE,
+                                      PRINT_SOLVER_INFO)
 
 
 @dataclass
 class LoMPCConstants:
-    delta: float  # Relative weight of tracking cost.
-    theta: float  # Battery capacity [kWh].
-    s_max: float  # Maximum allowed fraction of battery charge.
-    w_max: float  # Maximum fraction of charge replenished per timestep.
-    bat_type: str  # Battery type, either "small" or "large".
+    """
+    delta:      Relative weight of tracking cost.
+    theta:      Battery capacity.
+    s_max:      Maximum allowed fraction of battery charge.
+    w_max:      Maximum fraction of charge replenished per timestep.
+    bat_type:   Battery type, either "small" or "large".
+    """
+
+    delta: float
+    theta: float
+    s_max: float
+    w_max: float
+    bat_type: str
 
 
 class LoMPC:
     def __init__(self, N: int, consts: LoMPCConstants) -> None:
         """
         Inputs:
-            N: Horizon length.
+            N:      Horizon length.
             consts: LoMPC constants.
         """
-        assert (consts.s_max >= MIN_MAX_CHARGE) and (consts.s_max <= MAX_MAX_CHARGE)
-        assert (consts.w_max >= 0) and (consts.w_max <= MAX_CHARGE_RATE)
+        assert (consts.s_max >= MIN_MAX_BAT_CHARGE) and (
+            consts.s_max <= MAX_MAX_BAT_CHARGE
+        )
+        assert (consts.w_max >= 0) and (consts.w_max <= MAX_BAT_CHARGE_RATE)
         assert (consts.bat_type == "small") or (consts.bat_type == "large")
+        self._set_constants(N, consts)
 
-        self._set_cvx_constants(N, consts)
         self._set_cvx_variables()
         self._set_cvx_parameters()
         self._update_cvx_parameters(np.zeros((3 * self.N,)), 0, 0)
@@ -43,10 +54,11 @@ class LoMPC:
         self._set_cvx_prices()
 
         self.prob = cv.Problem(cv.Minimize(self.cost), self.cons)
-        # print("LoMPC problem is DCP:", self.prob.is_dcp())
-        self.prob.solve(warm_start=True)
+        if PRINT_SOLVER_INFO:
+            print("LoMPC problem is DCP:", self.prob.is_dcp())
+        self.prob.solve(solver=LOMPC_SOLVER, warm_start=True)
 
-    def _set_cvx_constants(self, N: int, consts: LoMPCConstants) -> None:
+    def _set_constants(self, N: int, consts: LoMPCConstants) -> None:
         self.N = N
         self.delta = consts.delta
         self.theta = consts.theta
@@ -56,6 +68,8 @@ class LoMPC:
         self.q_scale = 3 * self.theta / (4 * self.w_max)
         # LoMPC input matrix, y = A w.
         self.A = np.tril(np.ones((self.N, self.N)))
+        # Strong convexity modulus.
+        self.m_sc = 2 * self.delta * self.theta**2
 
     def _set_cvx_variables(self) -> None:
         self.w = cv.Variable(self.N, nonneg=True)
@@ -97,7 +111,7 @@ class LoMPC:
                 0.5 * w_rel, w_rel - 0.125, 1.5 * w_rel - 0.375, 2 * w_rel - 0.75
             )
         )
-        self.cost += self.theta**2 * pwl
+        self.cost += (self.theta * self.w_max) ** 2 * pwl
 
     def _set_cvx_tracking_cost(self) -> None:
         y = self.A @ self.w
@@ -123,19 +137,38 @@ class LoMPC:
     def solve_lompc(
         self, lmbd: np.ndarray, lmbd_r: float, gamma: float
     ) -> tuple[np.ndarray, float]:
+        """
+        Inputs:
+            lmbd:   Price vector.
+            lmbd_r: Robustness price parameter.
+            gamma:  Fraction of battery capacity remaining to be charged.
+        Outputs:
+            w_opt:      Optimal w vector.
+            cost_opt:   Optimal cost.
+        """
         self._update_cvx_parameters(lmbd, lmbd_r, gamma)
-        self.prob.solve(warm_start=True)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            self.prob.solve(solver=LOMPC_SOLVER, warm_start=True)
         w_opt = self.w.value
-        price_opt = self.price.value
-        return w_opt, price_opt
+        cost_opt = self.cost.value
+        return w_opt, cost_opt
+
+    def get_sc_modulus(self) -> float:
+        return self.m_sc
+
+    def get_input_mat(self) -> np.ndarray:
+        return self.A
 
     def phi(self, w: np.ndarray) -> np.ndarray:
+        assert w.shape == (self.N,)
         # Linear + quadratic prices are given by: lmbd @ phi(w).
         return np.hstack(
             (self.theta * w, self.theta * (self.w_max - w), self.q_scale * (w * w))
         )
 
     def Dphi(self, w: np.ndarray) -> np.ndarray:
+        assert w.shape == (self.N,)
         return np.block(
             [
                 [self.theta * np.eye(self.N)],

@@ -14,7 +14,7 @@ def _get_lompc_consts(bat_type: str) -> LoMPCConstants:
         s_max = 0.9
         w_max = 0.25
     elif bat_type == "large":
-        delta = 1
+        delta = 0.05
         theta = 50
         s_max = 0.9
         w_max = 0.15
@@ -93,8 +93,8 @@ def _check_robustness_bounds(N: int, consts: LoMPCConstants, lompc: LoMPC) -> No
 
 def main() -> None:
     N = 12
-    # bat_type = "small"
-    bat_type = "large"
+    bat_type = "small"
+    # bat_type = "large"
     consts = _get_lompc_consts(bat_type)
     lompc = LoMPC(N, consts)
 
