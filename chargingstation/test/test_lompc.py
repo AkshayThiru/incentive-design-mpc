@@ -14,7 +14,7 @@ def _get_lompc_consts(bat_type: str) -> LoMPCConstants:
         s_max = 0.9
         w_max = 0.25
     elif bat_type == "large":
-        delta = 0.05
+        delta = 0.025
         theta = 50
         s_max = 0.9
         w_max = 0.15
@@ -40,14 +40,15 @@ def _plot_unpriced_energy_consumption(
     N: int, consts: LoMPCConstants, lompc: LoMPC
 ) -> None:
     t = np.arange(0, N)
-    w_opt, _ = lompc.solve_lompc(np.zeros((3 * N,)), 0, consts.s_max)
+    gamma = consts.s_max
+    w_opt, _ = lompc.solve_lompc(np.zeros((3 * N,)), 0, gamma)
 
     _, ax = plt.subplots(2)
     ax[0].plot(t, w_opt, "-b", label="optimal w")
     ax[0].plot(t, consts.w_max * np.ones((N,)), "--r")
     ax[0].legend()
     ax[1].plot(t, np.cumsum(w_opt), "-b", label="optimal y")
-    ax[1].plot(t, consts.s_max * np.ones((N,)), "--r")
+    ax[1].plot(t, gamma * np.ones((N,)), "--r")
     ax[1].legend()
     plt.show()
 
@@ -93,8 +94,8 @@ def _check_robustness_bounds(N: int, consts: LoMPCConstants, lompc: LoMPC) -> No
 
 def main() -> None:
     N = 12
-    bat_type = "small"
-    # bat_type = "large"
+    # bat_type = "small"
+    bat_type = "large"
     consts = _get_lompc_consts(bat_type)
     lompc = LoMPC(N, consts)
 

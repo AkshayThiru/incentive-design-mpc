@@ -13,7 +13,7 @@ from chargingstation.settings import (LOMPC_SOLVER, MAX_BAT_CHARGE_RATE,
 class LoMPCConstants:
     """
     delta:      Relative weight of tracking cost.
-    theta:      Battery capacity.
+    theta:      Battery capacity [kWh].
     s_max:      Maximum allowed fraction of battery charge.
     w_max:      Maximum fraction of charge replenished per timestep.
     bat_type:   Battery type, either "small" or "large".
@@ -108,7 +108,7 @@ class LoMPC:
         w_rel = self.w / self.w_max
         pwl = cv.sum(
             cv.maximum(
-                0.5 * w_rel, w_rel - 0.125, 1.5 * w_rel - 0.375, 2 * w_rel - 0.75
+                0.0 * w_rel, w_rel - 0.125, 1.5 * w_rel - 0.375, 2 * w_rel - 0.75
             )
         )
         self.cost += (self.theta * self.w_max) ** 2 * pwl
