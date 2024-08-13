@@ -87,7 +87,7 @@ class PriceCoordinator:
             price_after_reg:    Price after regularization.
         """
         # Convergence tolerance.
-        tol, _ = self._get_robustness_bounds(lmbd_r)
+        tol, w0_err_bound = self._get_robustness_bounds(lmbd_r)
         tol += self.eps_tol
         # w-inner product metric.
         A_bar, A_bar_inv = self._get_w_inner_product_metric(lmbd_r)
@@ -98,13 +98,13 @@ class PriceCoordinator:
         w_k, _ = self.lompc.solve_lompc(lmbd_k, lmbd_r, self.gamma_center)
         # Gradient descent till convergence:
         for iter in range(MAX_PRICE_COORD_ITERATIONS):
-            err = self._get_w_avg_err(lmbd_k, lmbd_r, w_ref, A_bar)
+            w_err_max, _, _ = self._get_w_err(lmbd_k, lmbd_r, w_ref, A_bar)
             if PRINT_SOLVER_INFO:
                 print(
-                    f"Iteration: {iter:4d} | Error: {err:13.8f} | Tolerance: {tol:13.8f}",
+                    f"Iteration     : {iter:4d} | Error: {w_err_max:13.8f} | Tolerance: {tol:13.8f}",
                     end="\r",
                 )
-            if err <= tol:
+            if w_err_max <= tol:
                 if PRINT_SOLVER_INFO:
                     print("")
                 break
@@ -116,10 +116,14 @@ class PriceCoordinator:
         price_new = self.lompc.phi(w_k) @ lmbd_k
         if PRINT_SOLVER_INFO:
             w_k_, _ = self.lompc.solve_lompc(lmbd_k, lmbd_r, self.gamma_center)
-            print(f"Regularization: Total price: {price_pre:9.3f} -> {price_new:9.3f}")
+            print(f"Regularization: Price  : {price_pre:9.3f} -> {price_new:9.3f}")
             print(f"                w-error: {np.linalg.norm(w_k - w_k_):13.8f}")
-            err = self._get_w_avg_err(lmbd_k, lmbd_r, w_ref, A_bar)
-            print(f"w-error: {err:13.8f} | Tolerance: {tol:13.8f}")
+            w_err_max, w0_err, w_avg_err = self._get_w_err(lmbd_k, lmbd_r, w_ref, A_bar)
+            print(f"w-error (max) : {w_err_max:13.8f} | Tolerance     : {tol:13.8f}")
+            print(f"w-error (avg) : {w_avg_err:13.8f} | Tolerance     : {tol:13.8f}")
+            print(
+                f"w0-error      : {w0_err:13.8f} | w0 error bound: {w0_err_bound:13.8f}"
+            )
         # Update previous prices.
         self.prev_prices = lmbd_k[: self.r]
         solver_stats = {
@@ -143,17 +147,24 @@ class PriceCoordinator:
         A_bar_inv = np.linalg.inv(A_bar)
         return A_bar, A_bar_inv
 
-    def _get_w_avg_err(
+    def _get_w_err(
         self, lmbd: np.ndarray, lmbd_r: float, w_ref: np.ndarray, A_bar: np.ndarray
-    ) -> float:
+    ) -> tuple[float, float, float]:
         w_avg = np.zeros((self.N,))
+        w0 = np.zeros((self.nrobots,))
+        w_err_max = 0
         gamma = self.consts.s_max - self.s0
         for i in range(self.nrobots):
             w_i, _ = self.lompc.solve_lompc(lmbd, lmbd_r, gamma[i])
             w_avg += w_i
+            w0[i] = w_i[0]
+            w_err_i = np.sqrt((w_i - w_ref) @ A_bar @ (w_i - w_ref))
+            if w_err_i > w_err_max:
+                w_err_max = w_err_i
         w_avg /= self.nrobots
         w_avg_err = np.sqrt((w_avg - w_ref) @ A_bar @ (w_avg - w_ref))
-        return w_avg_err
+        w0_err = np.max(w0) - np.min(w0)
+        return w_err_max, w0_err, w_avg_err
 
     def _price_gradient_descent_step(
         self, A_bar_inv: np.ndarray, w_ref: np.ndarray, w: np.ndarray, lmbd: np.ndarray
