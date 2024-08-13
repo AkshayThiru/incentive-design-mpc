@@ -30,8 +30,8 @@ class PriceCoordinator:
         self._set_cvx_cost()
 
         self.prob = cv.Problem(cv.Minimize(self.cost))
-        if PRINT_SOLVER_INFO:
-            print("Price gradient-descent problem is DCP:", self.prob.is_dcp())
+        # if PRINT_SOLVER_INFO:
+        #     print("Price gradient-descent problem is DCP:", self.prob.is_dcp())
         self.prob.solve(solver=PRICE_COORD_SOLVER, warm_start=True)
 
     def _set_constants(self, N: int, consts: LoMPCConstants, price_type: str) -> None:
@@ -108,11 +108,13 @@ class PriceCoordinator:
                 if PRINT_SOLVER_INFO:
                     print("")
                 break
-            lmbd_k = self._price_gradient_descent_step(A_bar_inv, w_ref, w_k, lmbd_k)
+            lmbd_k[: self.r] = self._price_gradient_descent_step(
+                A_bar_inv, w_ref, w_k, lmbd_k[: self.r]
+            )
             w_k, _ = self.lompc.solve_lompc(lmbd_k, lmbd_r, self.gamma_center)
         # Regularize prices.
         price_pre = self.lompc.phi(w_k) @ lmbd_k
-        lmbd_k = self._regularize_prices(w_k, lmbd_k)
+        lmbd_k[: self.r] = self._regularize_prices(w_k, lmbd_k[: self.r])
         price_new = self.lompc.phi(w_k) @ lmbd_k
         if PRINT_SOLVER_INFO:
             w_k_, _ = self.lompc.solve_lompc(lmbd_k, lmbd_r, self.gamma_center)

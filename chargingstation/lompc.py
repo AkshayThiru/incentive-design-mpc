@@ -54,8 +54,8 @@ class LoMPC:
         self._set_cvx_prices()
 
         self.prob = cv.Problem(cv.Minimize(self.cost), self.cons)
-        if PRINT_SOLVER_INFO:
-            print("LoMPC problem is DCP:", self.prob.is_dcp())
+        # if PRINT_SOLVER_INFO:
+        #     print("LoMPC problem is DCP:", self.prob.is_dcp())
         self.prob.solve(solver=LOMPC_SOLVER, warm_start=True)
 
     def _set_constants(self, N: int, consts: LoMPCConstants) -> None:

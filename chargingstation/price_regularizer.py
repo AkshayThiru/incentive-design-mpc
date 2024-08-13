@@ -38,8 +38,8 @@ class PriceRegularizer:
         self._set_cvx_cost()
 
         self.prob = cv.Problem(cv.Minimize(self.cost), self.cons)
-        if PRINT_SOLVER_INFO:
-            print("Price regularization problem is DCP:", self.prob.is_dcp())
+        # if PRINT_SOLVER_INFO:
+        #     print("Price regularization problem is DCP:", self.prob.is_dcp())
         self.prob.solve(warm_start=False)
 
     def _set_cvx_variables(self) -> None:
