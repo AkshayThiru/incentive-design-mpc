@@ -1,16 +1,13 @@
+import warnings
+
 import cvxpy as cv
 import numpy as np
-import warnings
 
 from chargingstation.lompc import LoMPC, LoMPCConstants
 from chargingstation.price_regularizer import PriceRegularizer
-from chargingstation.settings import (
-    MAX_PRICE_COORD_ITERATIONS,
-    PRICE_COORD_EPS_REG,
-    PRICE_COORD_EPS_TOL,
-    PRICE_COORD_SOLVER,
-    PRINT_LEVEL,
-)
+from chargingstation.settings import (MAX_PRICE_COORD_ITERATIONS,
+                                      PRICE_COORD_EPS_REG, PRICE_COORD_EPS_TOL,
+                                      PRICE_COORD_SOLVER, PRINT_LEVEL)
 
 
 class PriceCoordinator:

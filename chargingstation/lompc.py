@@ -4,13 +4,9 @@ from dataclasses import dataclass
 import cvxpy as cv
 import numpy as np
 
-from chargingstation.settings import (
-    LOMPC_SOLVER,
-    MAX_BAT_CHARGE_RATE,
-    MAX_MAX_BAT_CHARGE,
-    MIN_MAX_BAT_CHARGE,
-    PRINT_LEVEL,
-)
+from chargingstation.settings import (LOMPC_SOLVER, MAX_BAT_CHARGE_RATE,
+                                      MAX_MAX_BAT_CHARGE, MIN_MAX_BAT_CHARGE,
+                                      PRINT_LEVEL)
 
 
 @dataclass

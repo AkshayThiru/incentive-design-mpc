@@ -1,6 +1,7 @@
+import warnings
+
 import cvxpy as cv
 import numpy as np
-import warnings
 
 from chargingstation.settings import PRINT_LEVEL
 

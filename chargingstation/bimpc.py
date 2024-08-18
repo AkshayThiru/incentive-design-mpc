@@ -1,8 +1,8 @@
 import warnings
 from dataclasses import dataclass
 
-import numpy as np
 import cvxpy as cv
+import numpy as np
 
 from chargingstation.lompc import LoMPCConstants
 from chargingstation.settings import BIMPC_SOLVER, PRINT_LEVEL
