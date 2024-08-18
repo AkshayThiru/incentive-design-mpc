@@ -94,8 +94,8 @@ def _check_robustness_bounds(N: int, consts: LoMPCConstants, lompc: LoMPC) -> No
 
 def main() -> None:
     N = 12
-    # bat_type = "small"
-    bat_type = "large"
+    bat_type = "small"
+    # bat_type = "large"
     consts = _get_lompc_consts(bat_type)
     lompc = LoMPC(N, consts)
 

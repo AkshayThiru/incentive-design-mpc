@@ -1,10 +1,10 @@
 from cvxpy import CLARABEL
 
 # Global settings.
-PRINT_SOLVER_INFO = True
+PRINT_LEVEL = 2  # 3 is highest.
 
 # LoMPC settings.
-MIN_MAX_BAT_CHARGE = 0.5  # Lower bound of s_max.
+MIN_MAX_BAT_CHARGE = 0.75  # Lower bound of s_max.
 MAX_MAX_BAT_CHARGE = 0.9  # Upper bound of s_max.
 MAX_BAT_CHARGE_RATE = 0.25  # Upper bound of w_max.
 
@@ -16,3 +16,12 @@ PRICE_COORD_EPS_REG = 0.01
 PRICE_COORD_EPS_TOL = 0.05
 
 PRICE_COORD_SOLVER = CLARABEL
+
+# BiMPC settings.
+BIMPC_SOLVER = CLARABEL
+
+# ChargingStation settings.
+MIN_INITIAL_CHARGE = 0.3
+MAX_INITIAL_CHARGE = 0.5
+
+NUM_PARTITIONS_PER_BAT_TYPE = 4

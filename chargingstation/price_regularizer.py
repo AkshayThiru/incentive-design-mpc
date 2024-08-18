@@ -1,7 +1,8 @@
 import cvxpy as cv
 import numpy as np
+import warnings
 
-from chargingstation.settings import PRINT_SOLVER_INFO
+from chargingstation.settings import PRINT_LEVEL
 
 
 class PriceRegularizer:
@@ -38,8 +39,8 @@ class PriceRegularizer:
         self._set_cvx_cost()
 
         self.prob = cv.Problem(cv.Minimize(self.cost), self.cons)
-        # if PRINT_SOLVER_INFO:
-        #     print("Price regularization problem is DCP:", self.prob.is_dcp())
+        if PRINT_LEVEL >= 3:
+            print("Price regularization problem is DCP:", self.prob.is_dcp())
         self.prob.solve(warm_start=False)
 
     def _set_cvx_variables(self) -> None:
@@ -76,6 +77,8 @@ class PriceRegularizer:
             x_opt:  Optimal regularized vector.
         """
         self._update_cvx_parameters(A, b, c)
-        self.prob.solve(warm_start=False)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            self.prob.solve(warm_start=False)
         x_opt = self.x.value
         return x_opt

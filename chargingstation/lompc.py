@@ -4,9 +4,13 @@ from dataclasses import dataclass
 import cvxpy as cv
 import numpy as np
 
-from chargingstation.settings import (LOMPC_SOLVER, MAX_BAT_CHARGE_RATE,
-                                      MAX_MAX_BAT_CHARGE, MIN_MAX_BAT_CHARGE,
-                                      PRINT_SOLVER_INFO)
+from chargingstation.settings import (
+    LOMPC_SOLVER,
+    MAX_BAT_CHARGE_RATE,
+    MAX_MAX_BAT_CHARGE,
+    MIN_MAX_BAT_CHARGE,
+    PRINT_LEVEL,
+)
 
 
 @dataclass
@@ -54,8 +58,8 @@ class LoMPC:
         self._set_cvx_prices()
 
         self.prob = cv.Problem(cv.Minimize(self.cost), self.cons)
-        # if PRINT_SOLVER_INFO:
-        #     print("LoMPC problem is DCP:", self.prob.is_dcp())
+        if PRINT_LEVEL >= 3:
+            print("LoMPC problem is DCP:", self.prob.is_dcp())
         self.prob.solve(solver=LOMPC_SOLVER, warm_start=True)
 
     def _set_constants(self, N: int, consts: LoMPCConstants) -> None:

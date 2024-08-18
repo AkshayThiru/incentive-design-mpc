@@ -1,11 +1,16 @@
 import cvxpy as cv
 import numpy as np
+import warnings
 
 from chargingstation.lompc import LoMPC, LoMPCConstants
 from chargingstation.price_regularizer import PriceRegularizer
-from chargingstation.settings import (MAX_PRICE_COORD_ITERATIONS,
-                                      PRICE_COORD_EPS_REG, PRICE_COORD_EPS_TOL,
-                                      PRICE_COORD_SOLVER, PRINT_SOLVER_INFO)
+from chargingstation.settings import (
+    MAX_PRICE_COORD_ITERATIONS,
+    PRICE_COORD_EPS_REG,
+    PRICE_COORD_EPS_TOL,
+    PRICE_COORD_SOLVER,
+    PRINT_LEVEL,
+)
 
 
 class PriceCoordinator:
@@ -30,8 +35,8 @@ class PriceCoordinator:
         self._set_cvx_cost()
 
         self.prob = cv.Problem(cv.Minimize(self.cost))
-        # if PRINT_SOLVER_INFO:
-        #     print("Price gradient-descent problem is DCP:", self.prob.is_dcp())
+        if PRINT_LEVEL >= 3:
+            print("Price gradient-descent problem is DCP:", self.prob.is_dcp())
         self.prob.solve(solver=PRICE_COORD_SOLVER, warm_start=True)
 
     def _set_constants(self, N: int, consts: LoMPCConstants, price_type: str) -> None:
@@ -99,13 +104,15 @@ class PriceCoordinator:
         # Gradient descent till convergence:
         for iter in range(MAX_PRICE_COORD_ITERATIONS):
             w_err_max, _, _ = self._get_w_err(lmbd_k, lmbd_r, w_ref, A_bar)
-            if PRINT_SOLVER_INFO:
+            if PRINT_LEVEL >= 2:
                 print(
                     f"Iteration     : {iter:4d} | Error: {w_err_max:13.8f} | Tolerance: {tol:13.8f}",
                     end="\r",
                 )
+                if iter % 10 == 0:
+                    print("")
             if w_err_max <= tol:
-                if PRINT_SOLVER_INFO:
+                if (PRINT_LEVEL >= 2) and not (iter % 10 == 0):
                     print("")
                 break
             lmbd_k[: self.r] = self._price_gradient_descent_step(
@@ -116,7 +123,7 @@ class PriceCoordinator:
         price_pre = self.lompc.phi(w_k) @ lmbd_k
         lmbd_k[: self.r] = self._regularize_prices(w_k, lmbd_k[: self.r])
         price_new = self.lompc.phi(w_k) @ lmbd_k
-        if PRINT_SOLVER_INFO:
+        if PRINT_LEVEL >= 2:
             w_k_, _ = self.lompc.solve_lompc(lmbd_k, lmbd_r, self.gamma_center)
             print(f"Regularization: Price  : {price_pre:9.3f} -> {price_new:9.3f}")
             print(f"                w-error: {np.linalg.norm(w_k - w_k_):13.8f}")
@@ -189,7 +196,9 @@ class PriceCoordinator:
         q_qp = -2 * P_qp @ lmbd - (phi - phi_ref)
 
         self._update_cvx_parameters(P_qp, q_qp)
-        self.prob.solve(solver=PRICE_COORD_SOLVER, warm_start=True)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            self.prob.solve(solver=PRICE_COORD_SOLVER, warm_start=True)
         lmbd_next = self.lmbd.value
         return lmbd_next
 
