@@ -1,11 +1,18 @@
 import warnings
 from dataclasses import dataclass
+from enum import Enum
 
 import cvxpy as cv
 import numpy as np
 
 from chargingstation.lompc import LoMPCConstants
 from chargingstation.settings import BIMPC_SOLVER, PRINT_LEVEL
+
+
+class BiMPCTrackingCost(Enum):
+    WEIGHTED = 0
+    UNWEIGHTED = 1
+    EXP_UNWEIGHTED = 2
 
 
 @dataclass
@@ -16,7 +23,8 @@ class BiMPCConstants:
     u_gen_max:          Maximum charge generation per timestep.
     u_bat_max:          Maximum charge/discharge rate of the storage battery.
     xi_bat_max:         Battery storage capacity.
-    tracking_cost_type: "weighted" or "unweighted".
+    tracking_cost_type: Enum of type BiMPCTrackingCost.
+    exp_rate:           Rate of expoenential growth for EXP_UNWEIGHTED tracking cost.
     """
 
     delta: float
@@ -24,7 +32,8 @@ class BiMPCConstants:
     u_gen_max: float
     u_bat_max: float
     xi_bat_max: float
-    tracking_cost_type: str = "unweighted"
+    tracking_cost_type: BiMPCTrackingCost
+    exp_rate: float = 1  # Use np.Inf if only the cost at the final timestep is needed.
 
 
 @dataclass
@@ -72,9 +81,7 @@ class BiMPC:
         assert consts.u_gen_max >= 0
         assert consts.u_bat_max >= 0
         assert consts.xi_bat_max >= 0
-        assert (consts.tracking_cost_type == "weighted") or (
-            consts.tracking_cost_type == "unweighted"
-        )
+        assert consts.exp_rate >= 1
         self._set_constants(N, Np, consts, consts_s, consts_l)
 
         self._set_cvx_variables()
@@ -122,6 +129,7 @@ class BiMPC:
         self.u_gen_max = consts.u_gen_max
         self.u_bat_max = consts.u_bat_max
         self.xi_bat_max = consts.xi_bat_max
+        self.exp_rate = consts.exp_rate * 1.0
         # LoMPC constants.
         self.theta_s = consts_s.theta
         self.theta_l = consts_l.theta
@@ -212,10 +220,14 @@ class BiMPC:
         self.cost += self.c_gen * cv.sum(cv.power(self.u_gen, 1.7))
 
     def _set_cvx_tracking_cost(self, consts: BiMPCConstants) -> None:
-        if consts.tracking_cost_type == "weighted":
+        if consts.tracking_cost_type == BiMPCTrackingCost.WEIGHTED:
             self._set_cvx_weighted_tracking_cost()
-        else:
+        elif consts.tracking_cost_type == BiMPCTrackingCost.UNWEIGHTED:
             self._set_cvx_unweighted_tracking_cost()
+        elif consts.tracking_cost_type == BiMPCTrackingCost.EXP_UNWEIGHTED:
+            self._set_cvx_exp_unweighted_tracking_cost()
+        else:
+            raise NotImplementedError
 
     def _set_cvx_weighted_tracking_cost(self) -> None:
         tracking_err_cost = 0
@@ -235,6 +247,18 @@ class BiMPC:
                 self.A @ self.w_s[p, :] - self.gamma_s[p]
             )
             tracking_err_cost += cv.sum_squares(
+                self.A @ self.w_l[p, :] - self.gamma_l[p]
+            )
+        self.cost += self.delta * tracking_err_cost
+
+    def _set_cvx_exp_unweighted_tracking_cost(self) -> None:
+        tracking_err_cost = 0
+        exp_weight = np.power(self.exp_rate, np.arange(-self.N + 1, 1, 1))
+        for p in range(self.Np):
+            tracking_err_cost += exp_weight @ cv.square(
+                self.A @ self.w_s[p, :] - self.gamma_s[p]
+            )
+            tracking_err_cost += exp_weight @ cv.square(
                 self.A @ self.w_l[p, :] - self.gamma_l[p]
             )
         self.cost += self.delta * tracking_err_cost

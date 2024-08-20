@@ -14,7 +14,7 @@ def _get_csv_data() -> list:
     return data
 
 
-def import_medium_term_demand_forecast(
+def medium_term_demand_forecast(
     hours: int, scale: float, interpolate: bool = False
 ) -> np.ndarray:
     data = _get_csv_data()
@@ -35,10 +35,8 @@ def import_medium_term_demand_forecast(
 
 def main() -> None:
     hours = 48
-    demand = import_medium_term_demand_forecast(hours, 1 / 2000, interpolate=False)
-    demand_interp = import_medium_term_demand_forecast(
-        hours, 1 / 2000, interpolate=True
-    )
+    demand = medium_term_demand_forecast(hours, 1 / 4, interpolate=False)
+    demand_interp = medium_term_demand_forecast(hours, 1 / 4, interpolate=True)
     _, ax = plt.subplots(1)
     ax.plot(np.arange(len(demand)), demand, "-b", label="uninterpolated")
     ax.plot(
