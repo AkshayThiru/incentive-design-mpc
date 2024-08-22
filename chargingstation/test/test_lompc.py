@@ -58,7 +58,7 @@ def _check_robustness_bounds(N: int, consts: LoMPCConstants, lompc: LoMPC) -> No
     len_arr = len(gamma_max_arr)
     A = np.tril(np.ones((N, N)))
     lmbd = consts.theta * np.random.random((3 * N,))
-    kappa = (3 * N) * np.random.random()
+    kappa = (3 * N) * np.random.random() + 1e-5
     lmbd_r = consts.delta * kappa
     A_bar = A.T @ A + kappa * np.eye(N)  # Metric for the w-inner product.
 
@@ -78,7 +78,7 @@ def _check_robustness_bounds(N: int, consts: LoMPCConstants, lompc: LoMPC) -> No
         w_err[j] = np.sqrt((w_opt_avg - w_opt_ref) @ A_bar @ (w_opt_avg - w_opt_ref))
         w0_err[j] = np.abs(w_opt_avg[0] - w_opt_ref[0])
         w_err_bound[j] = np.sqrt(N) * gamma_rng
-        w0_err_bound[j] = np.sqrt(N) / np.sqrt(N + kappa) * gamma_rng
+        w0_err_bound[j] = w_err_bound[j] * np.min((1, 1 / np.sqrt(kappa)))
 
     _, ax = plt.subplots(2)
     ax[0].plot(gamma_max_arr, w_err, "-b", label="w-error")
@@ -94,8 +94,8 @@ def _check_robustness_bounds(N: int, consts: LoMPCConstants, lompc: LoMPC) -> No
 
 def main() -> None:
     N = 12
-    bat_type = "small"
-    # bat_type = "large"
+    # bat_type = "small"
+    bat_type = "large"
     consts = _get_lompc_consts(bat_type)
     lompc = LoMPC(N, consts)
 

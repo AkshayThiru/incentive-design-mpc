@@ -4,13 +4,9 @@ from dataclasses import dataclass
 import cvxpy as cv
 import numpy as np
 
-from chargingstation.settings import (
-    LOMPC_SOLVER,
-    MAX_BAT_CHARGE_RATE,
-    MAX_MAX_BAT_CHARGE,
-    MIN_MAX_BAT_CHARGE,
-    PRINT_LEVEL,
-)
+from chargingstation.settings import (LOMPC_SOLVER, MAX_BAT_CHARGE_RATE,
+                                      MAX_MAX_BAT_CHARGE, MIN_MAX_BAT_CHARGE,
+                                      PRINT_LEVEL)
 
 
 @dataclass
@@ -104,9 +100,10 @@ class LoMPC:
             self._set_cvx_large_bat_degradation_cost()
 
     def _set_cvx_small_bat_degradation_cost(self) -> None:
-        w_lim = 1.5 * self.w_max
-        scale = (self.theta * w_lim) ** 2
-        self.cost += -scale * cv.sum(cv.log(1 - cv.square(self.w / w_lim)))
+        # w_lim = 1.5 * self.w_max
+        # scale = (self.theta * w_lim) ** 2
+        # self.cost += -scale * cv.sum(cv.log(1 - cv.square(self.w / w_lim)))
+        self.cost += self.theta**2 * cv.sum_squares(self.w / 0.9)
 
     def _set_cvx_large_bat_degradation_cost(self) -> None:
         w_rel = self.w / self.w_max
