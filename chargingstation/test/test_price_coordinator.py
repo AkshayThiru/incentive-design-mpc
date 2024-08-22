@@ -67,7 +67,7 @@ def _test_multiple_robot() -> None:
         print("-" * 50)
         print(f"Battery type: {bat_type}")
         print("-" * 50)
-        _solve_price_coordination(nrobots, N, consts, price_type, lmbd_r, 1 / 9.0)
+        _solve_price_coordination(nrobots, N, consts, price_type, lmbd_r, 1 / 36.0)
 
 
 def _test_horizon_length() -> None:
@@ -85,7 +85,7 @@ def _test_horizon_length() -> None:
             print("-" * 50)
             print(f"Battery type: {bat_type} | Horizon length: {N}")
             print("-" * 50)
-            _solve_price_coordination(nrobots, N, consts, price_type, lmbd_r, 1 / 9.0)
+            _solve_price_coordination(nrobots, N, consts, price_type, lmbd_r, 1 / 36.0)
 
 
 def _test_robustness_parameter() -> None:
@@ -103,14 +103,14 @@ def _test_robustness_parameter() -> None:
             print("-" * 50)
             print(f"Battery type: {bat_type} | \lambda_r: {lmbd_r:7.2f}")
             print("-" * 50)
-            _solve_price_coordination(nrobots, N, consts, price_type, lmbd_r, 1 / 9.0)
+            _solve_price_coordination(nrobots, N, consts, price_type, lmbd_r, 1 / 36.0)
 
 
 def main() -> None:
-    _test_single_robot()
-    _test_multiple_robot()
+    # _test_single_robot()
+    # _test_multiple_robot()
 
-    _test_horizon_length()
+    # _test_horizon_length()
 
     _test_robustness_parameter()
 

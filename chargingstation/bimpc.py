@@ -151,7 +151,8 @@ class BiMPC:
         self.gamma_s = cv.Parameter(self.Np, nonneg=True)
         self.gamma_l = cv.Parameter(self.Np, nonneg=True)
         # Initial battery charge.
-        self.xi0_bat = cv.Parameter(nonneg=True)
+        # self.xi0_bat = cv.Parameter(nonneg=True)
+        self.xi0_bat = cv.Parameter() # Due to numerical errors, xi0_bat can become slightly negative.
         # Demand for the next time horizon.
         self.demand = cv.Parameter(self.N, nonneg=True)
         # Dependent parameters.

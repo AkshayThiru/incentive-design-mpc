@@ -22,7 +22,7 @@ def _get_normalized_bimpc_consts(
 ) -> BiMPCConstants:
     delta = 1e3
     c_gen = 1
-    u_gen_max = 0.9
+    u_gen_max = 1.5
     u_bat_max = 0.3
     xi_bat_max = 1.5
     exp_rate = 5
@@ -55,8 +55,8 @@ def _get_normalized_bimpc_parameters(
     else:
         Nr_s = nr_s * np.ones((Np,)) / (Np * B)
         Nr_l = nr_l * np.ones((Np,)) / (Np * B)
-    beta_s = 0.3 / Np * np.ones((Np,))
-    beta_l = 0.3 / Np * np.ones((Np,))
+    beta_s = np.sqrt(N) * 0.3 / Np * np.ones((Np,))
+    beta_l = np.sqrt(N) * 0.3 / Np * np.ones((Np,))
     if random_gamma:
         gamma_s = 0.6 * np.random.random((Np,))
         gamma_l = 0.6 * np.random.random((Np,))
@@ -65,10 +65,10 @@ def _get_normalized_bimpc_parameters(
         gamma_l = 0.6 * np.ones((Np,))
     xi0_bat = 0
     if early_peak_demand:
-        demand = medium_term_demand_forecast(24 + N, 1 / 10, interpolate=False) / B
+        demand = medium_term_demand_forecast(24 + N, 1 / 4, interpolate=False) / B
         demand = demand[17 : 17 + N]
     else:
-        demand = medium_term_demand_forecast(N, 1 / 10, interpolate=False) / B
+        demand = medium_term_demand_forecast(N, 1 / 4, interpolate=False) / B
     # demand = 0.5 * np.array([0] * (N // 2) + [1] * (N - N // 2))
     return BiMPCParameters(
         Nr_s, Nr_l, beta_s, beta_l, gamma_s, gamma_l, xi0_bat, demand
@@ -79,7 +79,7 @@ def _test_random_robot_distributions(
     random_Nr: bool, random_gamma: bool, early_peak_demand: bool
 ) -> None:
     N = 24
-    Np = 4
+    Np = 12
     nr_s = 500
     nr_l = 500
     consts_s, consts_l = _get_lompc_constants()
@@ -97,10 +97,10 @@ def _test_random_robot_distributions(
         random_gamma,
         early_peak_demand,
     )
-    print(f"Small robot distribution: {params.Nr_s / np.sum(params.Nr_s)}")
-    print(f"Large robot distribution: {params.Nr_l / np.sum(params.Nr_l)}")
-    print(f"Gamma (small): {params.gamma_s}")
-    print(f"Gamma (large): {params.gamma_l}")
+    print(f"Small robot distribution: {np.round(params.Nr_s / np.sum(params.Nr_s), 4)}")
+    print(f"Large robot distribution: {np.round(params.Nr_l / np.sum(params.Nr_l), 4)}")
+    print(f"Gamma (small): {np.round(params.gamma_s, 4)}")
+    print(f"Gamma (large): {np.round(params.gamma_l, 4)}")
 
     bimpc = BiMPC(N, Np, consts, consts_s, consts_l)
     w_s_opt, w_l_opt, u_gen_opt = bimpc.solve_bimpc(params)
@@ -131,7 +131,7 @@ def _plot_figure(
         ax[0, 0].plot(t, w_s_opt[p, :])
     ax[0, 0].plot(t, consts_s.w_max * np.ones((N,)), "--")
     ax[0, 0].set_title("Optimal energy output (small)")
-    #   cumulate w_s_opt: y_s_opt / gamma_s.
+    #   cumulative w_s_opt: y_s_opt / gamma_s.
     for p in range(Np):
         ax[0, 1].plot(t, A @ w_s_opt[p, :] / params.gamma_s[p])
     ax[0, 1].plot(t, np.ones((N,)), "--")

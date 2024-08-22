@@ -4,9 +4,13 @@ from dataclasses import dataclass
 import cvxpy as cv
 import numpy as np
 
-from chargingstation.settings import (LOMPC_SOLVER, MAX_BAT_CHARGE_RATE,
-                                      MAX_MAX_BAT_CHARGE, MIN_MAX_BAT_CHARGE,
-                                      PRINT_LEVEL)
+from chargingstation.settings import (
+    LOMPC_SOLVER,
+    MAX_BAT_CHARGE_RATE,
+    MAX_MAX_BAT_CHARGE,
+    MIN_MAX_BAT_CHARGE,
+    PRINT_LEVEL,
+)
 
 
 @dataclass
@@ -149,7 +153,7 @@ class LoMPC:
         self._update_cvx_parameters(lmbd, lmbd_r, gamma)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            self.prob.solve(solver=LOMPC_SOLVER, warm_start=True)
+            self.prob.solve(solver=LOMPC_SOLVER, warm_start=True, max_iter=int(1e5))
         w_opt = self.w.value
         cost_opt = self.cost.value
         return w_opt, cost_opt
@@ -159,6 +163,14 @@ class LoMPC:
 
     def get_input_mat(self) -> np.ndarray:
         return self.A
+
+    def get_price0(self, w: np.ndarray, lmbd: np.ndarray, lmbd_r: float) -> float:
+        price0 = (
+            self.theta * (w[0] * lmbd[0] + (self.w_max - w[0]) * lmbd[self.N])
+            + self.q_scale * w[0] ** 2 * lmbd[2 * self.N]
+            + self.theta**2 * w[0] ** 2 * lmbd_r
+        )
+        return price0
 
     def phi(self, w: np.ndarray) -> np.ndarray:
         assert w.shape == (self.N,)
