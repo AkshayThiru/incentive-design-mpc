@@ -89,7 +89,7 @@ class PriceCoordinator:
             price_after_reg:    Price after regularization.
         """
         # Convergence tolerance.
-        tol, w0_err_bound = self._get_robustness_bounds(lmbd_r)
+        tol, w0_err_bound = self.get_robustness_bounds(lmbd_r)
         # w-inner product metric.
         A_bar, A_bar_inv = self._get_w_inner_product_metric(lmbd_r)
 
@@ -125,8 +125,12 @@ class PriceCoordinator:
             if PRINT_LEVEL >= 2:
                 print(f"Regularization: Price  : {price_pre:9.3f} -> {price_new:9.3f}")
                 print(f"                w-error: {np.linalg.norm(w_k - w_k_):13.8f}")
-                print(f"w-error (max) : {w_err_max:13.8f} | Tolerance     : {tol:13.8f}")
-                print(f"w-error (avg) : {w_avg_err:13.8f} | Tolerance     : {tol:13.8f}")
+                print(
+                    f"w-error (max) : {w_err_max:13.8f} | Tolerance     : {tol:13.8f}"
+                )
+                print(
+                    f"w-error (avg) : {w_avg_err:13.8f} | Tolerance     : {tol:13.8f}"
+                )
             print(
                 f"w0-error      : {w0_err:13.8f} | w0 error bound: {w0_err_bound:13.8f}"
             )
@@ -139,7 +143,10 @@ class PriceCoordinator:
         }
         return lmbd_k, solver_stats
 
-    def _get_robustness_bounds(self, lmbd_r: float) -> tuple[float, float]:
+    def get_gamma(self) -> float:
+        return self.gamma_center
+
+    def get_robustness_bounds(self, lmbd_r: float) -> tuple[float, float]:
         kappa = lmbd_r / self.consts.delta + 1e-5
         w_err_bound = np.sqrt(self.N) * self.s0_rng + self.eps_tol
         w0_err_bound = w_err_bound * np.min((1, 1 / np.sqrt(kappa)))
@@ -223,8 +230,10 @@ class PriceCoordinator:
 
     def _set_cvx_cost(self) -> None:
         self.cost += cv.sum_squares(self.P_chol_qp @ self.lmbd) + self.q_qp @ self.lmbd
-    
-    def get_w0_price0(self, lmbd: np.ndarray, lmbd_r: float) -> tuple[np.ndarray, float]:
+
+    def get_w0_price0(
+        self, lmbd: np.ndarray, lmbd_r: float
+    ) -> tuple[np.ndarray, float]:
         lmbd_ = np.zeros((3 * self.N))
         lmbd_[: self.r] = lmbd
         w0 = np.zeros((self.nrobots,))

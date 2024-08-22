@@ -107,10 +107,10 @@ def _test_robustness_parameter() -> None:
 
 
 def main() -> None:
-    # _test_single_robot()
-    # _test_multiple_robot()
+    _test_single_robot()
+    _test_multiple_robot()
 
-    # _test_horizon_length()
+    _test_horizon_length()
 
     _test_robustness_parameter()
 

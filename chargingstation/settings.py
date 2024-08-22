@@ -1,7 +1,7 @@
 from cvxpy import CLARABEL
 
 # Global settings.
-PRINT_LEVEL = 2  # 3 is highest.
+PRINT_LEVEL = 1  # 3 is highest.
 
 # LoMPC settings.
 MIN_MAX_BAT_CHARGE = 0.75  # Lower bound of s_max.
@@ -25,3 +25,5 @@ MIN_INITIAL_CHARGE = 0.3
 MAX_INITIAL_CHARGE = 0.5
 
 MIN_FULL_CHARGE_FRACTION = 0.95
+
+ADD_RESIDUAL_CHARGE_TO_BATTERY = True
