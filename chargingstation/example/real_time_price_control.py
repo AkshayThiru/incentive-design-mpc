@@ -59,8 +59,7 @@ def _get_unnormalized_external_demand() -> np.ndarray:
     return demand
 
 
-def main() -> None:
-    # Set charging station constants.
+def get_chargingstation_consts() -> ChargingStationConstants:
     consts_s, consts_l = _get_lompc_consts()
     consts_bi = _get_normalized_bimpc_consts()
     demand = _get_unnormalized_external_demand()
@@ -76,6 +75,12 @@ def main() -> None:
         consts_l,
         PRICE_TYPE,
     )
+    return consts
+
+
+def main() -> None:
+    # Set charging station constants.
+    consts = get_chargingstation_consts()
     # Initialize simulation.
     cs = ChargingStation(consts)
     logs = cs.simulate()

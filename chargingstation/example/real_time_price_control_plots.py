@@ -37,6 +37,7 @@ def _plot_graphs(logs: dict) -> None:
     err_w_l = consts_l.theta * np.sum(Nr_l * beta_l, axis=0) / B
 
     # Normalized (actual / predicted) battery charge and input.
+    u_bat_max = consts_bi.u_bat_max
     xi_bat_max = consts_bi.xi_bat_max
     xi_bat = logs["states"]["xi_bat"]
     xi0_bat = xi_bat[0]
@@ -67,25 +68,47 @@ def _plot_graphs(logs: dict) -> None:
     ax[0][0].plot(t, total_w_s_bi[:Tf], "-r", label="pred w_s")
     total_w_s_min = np.max(((total_w_s_bi - err_w_s)[:Tf], np.zeros((Tf,))), axis=0)
     total_w_s_max = np.min(
-        ((total_w_s_bi + err_w_s)[:Tf], nr * consts_s.theta / B * np.ones((Tf))), axis=0
+        (
+            (total_w_s_bi + err_w_s)[:Tf],
+            nr * consts_s.w_max * consts_s.theta / B * np.ones((Tf)),
+        ),
+        axis=0,
     )
     ax[0][0].fill_between(t, total_w_s_min, total_w_s_max, alpha=0.2, color="r")
-    ax[0][0].plot(t, nr * consts_s.theta / B * np.ones((Tf,)), "--b")
+    ax[0][0].plot(t, nr * consts_s.w_max * consts_s.theta / B * np.ones((Tf,)), "--b")
     ax[0][0].legend()
+
     # w_l with error.
     ax[0][1].plot(t, total_w_l[:Tf], "-b", label="actual w_l")
     ax[0][1].plot(t, total_w_l_bi[:Tf], "-r", label="pred w_l")
     total_w_l_min = np.max(((total_w_l_bi - err_w_l)[:Tf], np.zeros((Tf,))), axis=0)
     total_w_l_max = np.min(
-        ((total_w_l_bi + err_w_l)[:Tf], nr * consts_l.theta / B * np.ones((Tf))), axis=0
+        (
+            (total_w_l_bi + err_w_l)[:Tf],
+            nr * consts_l.w_max * consts_l.theta / B * np.ones((Tf)),
+        ),
+        axis=0,
     )
     ax[0][1].fill_between(t, total_w_l_min, total_w_l_max, alpha=0.2, color="r")
-    ax[0][1].plot(t, nr * consts_l.theta / B * np.ones((Tf,)), "--b")
+    ax[0][1].plot(t, nr * consts_l.w_max * consts_l.theta / B * np.ones((Tf,)), "--b")
     ax[0][1].legend()
+
     # Energy generated, demand, and battery state.
+    ax[1][0].plot(t, np.zeros((Tf,)), "-.y")
     ax[1][0].plot(t, demand[:Tf] / B, "-r", label="demand")
     ax[1][0].plot(t, u_gen[:Tf], "-b", label="u_gen")
     ax[1][0].plot(t, (total_w_s + total_w_l)[:Tf], "-m", label="w")
+    # ax[1][0].plot(t, u_bat[:Tf], "-k", label="u_bat")
+    # ax[1][0].plot(t, u_bat_bi[:Tf], "--k", label="u_bat")
+    u_bat_bi_min = np.max(
+        (u_bat_bi[:Tf] - err_w_s[:Tf] - err_w_l[:Tf], -u_bat_max * np.ones((Tf,))),
+        axis=0,
+    )
+    u_bat_bi_max = np.min(
+        (u_bat_bi[:Tf] + err_w_s[:Tf] + err_w_l[:Tf], u_bat_max * np.ones((Tf,))),
+        axis=0,
+    )
+    # ax[1][0].fill_between(t, u_bat_bi_min, u_bat_bi_max, alpha=0.2, color="grey")
     ax[1][0].plot(t, xi_bat[:Tf], "-g", label="xi_bat")
     ax[1][0].plot(t, xi_bat_bi[:Tf], "--g")
     xi_bat_bi_min = np.max(
@@ -96,6 +119,7 @@ def _plot_graphs(logs: dict) -> None:
     )
     ax[1][0].fill_between(t, xi_bat_bi_min, xi_bat_bi_max, alpha=0.2, color="g")
     ax[1][0].legend()
+
     # Average prices paid.
     ax[1][1].plot(t, avg_price_s[:Tf], "-r", label="price_s")
     # ax[1][1].plot(t, price_before_reg_s[: Tf], "--r")

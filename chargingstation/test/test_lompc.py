@@ -73,7 +73,7 @@ def _check_robustness_bounds(N: int, consts: LoMPCConstants, lompc: LoMPC) -> No
         for i in range(nrobots):
             w_opt, _ = lompc.solve_lompc(lmbd, lmbd_r, gamma_arr[i])
             w_opt_avg += w_opt
-        w_opt_avg /= nrobots
+        w_opt_avg = w_opt_avg / nrobots
         w_opt_ref, _ = lompc.solve_lompc(lmbd, lmbd_r, gamma_ref)
         w_err[j] = np.sqrt((w_opt_avg - w_opt_ref) @ A_bar @ (w_opt_avg - w_opt_ref))
         w0_err[j] = np.abs(w_opt_avg[0] - w_opt_ref[0])

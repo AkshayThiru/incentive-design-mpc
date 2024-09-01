@@ -12,8 +12,8 @@ def _print_errors(N: int, A: np.ndarray, c: np.ndarray, reg: PriceRegularizer) -
         x_opt = reg.solve_price_regularization(A, b, c)
         err_feas += np.linalg.norm(A @ x_opt - b)
         err_comp += x_opt[:N] @ x_opt[N:]
-    err_feas /= nsamples
-    err_comp /= nsamples
+    err_feas = err_feas / nsamples
+    err_comp = err_comp / nsamples
     print(f"Average linear constraint error: {err_feas}")
     print(f"Average complementarity error  : {err_comp}")
 

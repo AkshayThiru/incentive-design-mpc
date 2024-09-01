@@ -96,7 +96,9 @@ class PriceCoordinator:
         # Initialize price iterate from previous prices.
         lmbd_k = np.zeros((3 * self.N))
         lmbd_k[: self.r] = self.prev_prices
-        w_k, _ = self.lompc.solve_lompc(lmbd_k, lmbd_r, self.gamma_center)
+        w_k, dual_cost = self.lompc.solve_lompc(lmbd_k, lmbd_r, self.gamma_center)
+        dual_cost_decrease_ac = []
+        dual_cost_decrease_pred = []
         # Gradient descent till convergence:
         for iter in range(MAX_PRICE_COORD_ITERATIONS):
             w_err_max, _, _ = self._get_w_err(lmbd_k, lmbd_r, w_ref, A_bar)
@@ -111,10 +113,15 @@ class PriceCoordinator:
                 if (PRINT_LEVEL >= 2) and not (iter % 10 == 0):
                     print("")
                 break
-            lmbd_k[: self.r] = self._price_gradient_descent_step(
+            lmbd_k[: self.r], dual_cost_derease = self._price_gradient_descent_step(
                 A_bar_inv, w_ref, w_k, lmbd_k[: self.r]
             )
-            w_k, _ = self.lompc.solve_lompc(lmbd_k, lmbd_r, self.gamma_center)
+            w_k, dual_cost_new = self.lompc.solve_lompc(
+                lmbd_k, lmbd_r, self.gamma_center
+            )
+            dual_cost_decrease_ac.append(dual_cost_new - dual_cost)
+            dual_cost_decrease_pred.append(dual_cost_derease)
+            dual_cost = dual_cost_new
         # Regularize prices.
         price_pre = self.lompc.phi(w_k) @ lmbd_k
         lmbd_k[: self.r] = self._regularize_prices(w_k, lmbd_k[: self.r])
@@ -140,6 +147,8 @@ class PriceCoordinator:
             "iter": iter,
             "price_before_reg": price_pre,
             "price_after_reg": price_new,
+            "dual_cost_decrease_actual": np.array(dual_cost_decrease_ac),
+            "dual_cost_decrease_predicted": np.array(dual_cost_decrease_pred),
         }
         return lmbd_k, solver_stats
 
@@ -199,13 +208,16 @@ class PriceCoordinator:
             self.r
         )
         q_qp = -2 * P_qp @ lmbd - (phi - phi_ref)
+        dual_cost = lmbd @ P_qp @ lmbd + q_qp @ lmbd
 
         self._update_cvx_parameters(P_qp, q_qp)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             self.prob.solve(solver=PRICE_COORD_SOLVER, warm_start=True)
         lmbd_next = self.lmbd.value
-        return lmbd_next
+        dual_cost_new = self.cost.value
+        dual_cost_decrease = dual_cost - dual_cost_new
+        return lmbd_next, dual_cost_decrease
 
     def _regularize_prices(self, w: np.ndarray, lmbd: np.ndarray) -> np.ndarray:
         """
