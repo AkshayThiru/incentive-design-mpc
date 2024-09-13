@@ -47,7 +47,7 @@ class LoMPC:
 
         self.price = 0
         self.cost = 0
-        self._set_cvx_bat_degradation_cost(consts)
+        self._set_cvx_bat_degradation_cost()
         self._set_cvx_charging_cost()
         self._set_cvx_prices()
 
@@ -62,6 +62,7 @@ class LoMPC:
         self.theta = consts.theta
         self.y_max = consts.y_max
         self.w_max = consts.w_max
+        self.ev_type = consts.ev_type
         # Scaling factor for the quadratic electricity cost.
         self.q_scale = 3 * self.theta / (4 * self.w_max)
         # LoMPC input matrix, y = A w.
@@ -91,8 +92,8 @@ class LoMPC:
     def _set_cvx_constraints(self) -> None:
         self.cons += [self.w <= self.w_max]
 
-    def _set_cvx_bat_degradation_cost(self, consts: LoMPCConstants) -> None:
-        if consts.ev_type == "small":
+    def _set_cvx_bat_degradation_cost(self) -> None:
+        if self.ev_type == "small":
             self._set_cvx_small_bat_degradation_cost()
         else:
             self._set_cvx_large_bat_degradation_cost()

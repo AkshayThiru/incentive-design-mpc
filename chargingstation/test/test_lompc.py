@@ -28,16 +28,16 @@ def _get_lompc_consts(ev_type: str) -> LoMPCConstants:
 
 
 def _print_lompc_solve_time(N: int, consts: LoMPCConstants, lompc: LoMPC) -> None:
-    nrobots = 100
+    nEVs = 100
     start_time = default_timer()
-    for _ in range(nrobots):
+    for _ in range(nEVs):
         lmbd = consts.theta * np.random.random((3 * N,))
         lmbd_r = (3 * N) * consts.delta * np.random.random()
         gamma = consts.y_max * np.random.random()
         lompc.solve_lompc(lmbd, lmbd_r, gamma)
     end_time = default_timer()
     print(f"LoMPC Solve time for 100 instances: {end_time - start_time} s")
-    print(f"Average LoMPC solve time          : {(end_time - start_time) / nrobots} s")
+    print(f"Average LoMPC solve time          : {(end_time - start_time) / nEVs} s")
 
 
 def _plot_unpriced_electricity_consumption(
@@ -67,18 +67,18 @@ def _check_error_bounds(N: int, consts: LoMPCConstants, lompc: LoMPC) -> None:
     lmbd_r = consts.delta * kappa
     A_bar = A.T @ A + kappa * np.eye(N)  # Metric for the w-inner product.
 
-    nrobots = 10
+    nEVs = 10
     w_err, w0_err = np.zeros((len_arr,)), np.zeros((len_arr,))
     w_err_bound, w0_err_bound = np.zeros((len_arr,)), np.zeros((len_arr,))
     for j in tqdm(range(len_arr)):
-        gamma_arr = gamma_max_arr[j] * np.random.random((nrobots,))
+        gamma_arr = gamma_max_arr[j] * np.random.random((nEVs,))
         gamma_rng = gamma_max_arr[j] / 2  # (np.max(gamma_arr) - np.min(gamma_arr)) / 2
         gamma_ref = (np.max(gamma_arr) + np.min(gamma_arr)) / 2
         w_opt_avg = np.zeros((N,))
-        for i in range(nrobots):
+        for i in range(nEVs):
             w_opt, _ = lompc.solve_lompc(lmbd, lmbd_r, gamma_arr[i])
             w_opt_avg += w_opt
-        w_opt_avg = w_opt_avg / nrobots
+        w_opt_avg = w_opt_avg / nEVs
         w_opt_ref, _ = lompc.solve_lompc(lmbd, lmbd_r, gamma_ref)
         w_err[j] = np.sqrt((w_opt_avg - w_opt_ref) @ A_bar @ (w_opt_avg - w_opt_ref))
         w0_err[j] = np.abs(w_opt_avg[0] - w_opt_ref[0])

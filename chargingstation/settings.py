@@ -1,7 +1,7 @@
 from cvxpy import CLARABEL
 
 # Global settings.
-PRINT_LEVEL = 1  # 3 is highest.
+PRINT_LEVEL = 2  # 3 is highest.
 
 # LoMPC settings.
 MIN_MAX_BAT_SOC = 0.75  # Lower bound of y_max.
@@ -12,6 +12,9 @@ LOMPC_SOLVER = CLARABEL
 
 # PriceSolver settings.
 MAX_PRICE_SOLVER_ITERATIONS = 1000
+# Type of convergence criterion for price solver: "max" or "avg".
+PRICE_SOLVER_TOL_TYPE = "max"
+# PRICE_SOLVER_TOL_TYPE = "avg"
 PRICE_SOLVER_EPS_REG = 0.01
 PRICE_SOLVER_EPS_TOL = 0.01
 
