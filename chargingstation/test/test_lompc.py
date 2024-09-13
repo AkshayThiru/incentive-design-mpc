@@ -1,26 +1,30 @@
 from timeit import default_timer
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
 
 from chargingstation.lompc import LoMPC, LoMPCConstants
 
+mpl.rcParams["mathtext.fontset"] = "cm"
+mpl.rcParams["font.family"] = "STIXGeneral"
 
-def _get_lompc_consts(bat_type: str) -> LoMPCConstants:
-    if bat_type == "small":
+
+def _get_lompc_consts(ev_type: str) -> LoMPCConstants:
+    if ev_type == "small":
         delta = 0.05
         theta = 10
-        s_max = 0.9
+        y_max = 0.9
         w_max = 0.25
-    elif bat_type == "large":
+    elif ev_type == "large":
         delta = 0.025
         theta = 50
-        s_max = 0.9
+        y_max = 0.9
         w_max = 0.15
     else:
-        raise ValueError("Invalid battery type")
-    return LoMPCConstants(delta, theta, s_max, w_max, bat_type)
+        raise ValueError("Invalid EV type")
+    return LoMPCConstants(delta, theta, y_max, w_max, ev_type)
 
 
 def _print_lompc_solve_time(N: int, consts: LoMPCConstants, lompc: LoMPC) -> None:
@@ -28,35 +32,36 @@ def _print_lompc_solve_time(N: int, consts: LoMPCConstants, lompc: LoMPC) -> Non
     start_time = default_timer()
     for _ in range(nrobots):
         lmbd = consts.theta * np.random.random((3 * N,))
-        lmbd_m = (3 * N) * consts.delta * np.random.random()
-        gamma = consts.s_max * np.random.random()
-        lompc.solve_lompc(lmbd, lmbd_m, gamma)
+        lmbd_r = (3 * N) * consts.delta * np.random.random()
+        gamma = consts.y_max * np.random.random()
+        lompc.solve_lompc(lmbd, lmbd_r, gamma)
     end_time = default_timer()
     print(f"LoMPC Solve time for 100 instances: {end_time - start_time} s")
     print(f"Average LoMPC solve time          : {(end_time - start_time) / nrobots} s")
 
 
-def _plot_unpriced_energy_consumption(
+def _plot_unpriced_electricity_consumption(
     N: int, consts: LoMPCConstants, lompc: LoMPC
 ) -> None:
     t = np.arange(0, N)
-    gamma = consts.s_max
+    gamma = consts.y_max
     w_opt, _ = lompc.solve_lompc(np.zeros((3 * N,)), 0, gamma)
 
-    _, ax = plt.subplots(2)
-    ax[0].plot(t, w_opt, "-b", label="optimal w")
-    ax[0].plot(t, consts.w_max * np.ones((N,)), "--r")
+    _, ax = plt.subplots(2, layout="constrained", sharex=True)
+    ax[0].plot(t, w_opt, "-b", label=r"$w^*$")
+    ax[0].plot(t, consts.w_max * np.ones((N,)), "--r", label=r"$w_\text{max}$")
     ax[0].legend()
-    ax[1].plot(t, np.cumsum(w_opt), "-b", label="optimal y")
-    ax[1].plot(t, gamma * np.ones((N,)), "--r")
+    ax[1].plot(t, np.cumsum(w_opt), "-b", label=r"$y - y_0$")
+    ax[1].plot(t, gamma * np.ones((N,)), "--r", label=r"$\Gamma$")
+    ax[1].set_xlabel(r"$t$")
     ax[1].legend()
     plt.show()
 
 
-def _check_robustness_bounds(N: int, consts: LoMPCConstants, lompc: LoMPC) -> None:
-    gamma_max_arr = consts.s_max * np.arange(1, 0, -0.01)
+def _check_error_bounds(N: int, consts: LoMPCConstants, lompc: LoMPC) -> None:
+    gamma_max_arr = consts.y_max * np.arange(1, 0, -0.01)
     len_arr = len(gamma_max_arr)
-    A = np.tril(np.ones((N, N)))
+    A = lompc.get_input_mat()
     lmbd = consts.theta * np.random.random((3 * N,))
     kappa = (3 * N) * np.random.random() + 1e-5
     lmbd_r = consts.delta * kappa
@@ -80,28 +85,29 @@ def _check_robustness_bounds(N: int, consts: LoMPCConstants, lompc: LoMPC) -> No
         w_err_bound[j] = np.sqrt(N) * gamma_rng
         w0_err_bound[j] = w_err_bound[j] * np.min((1, 1 / np.sqrt(kappa)))
 
-    _, ax = plt.subplots(2)
-    ax[0].plot(gamma_max_arr, w_err, "-b", label="w-error")
-    ax[0].plot(gamma_max_arr, w_err_bound, "--r", label="w-error bound")
+    _, ax = plt.subplots(2, layout="constrained", sharex=True)
+    ax[0].plot(gamma_max_arr, w_err, "-b", label=r"$\Vert w - \hat{w}\Vert$")
+    ax[0].plot(gamma_max_arr, w_err_bound, "--r", label=r"$\sqrt{N}\bar{\Gamma}$")
     ax[0].set_yscale("log")
     ax[0].legend()
-    ax[1].plot(gamma_max_arr, w0_err, "-b", label="w0-error")
-    ax[1].plot(gamma_max_arr, w0_err_bound, "--r", label="w0-error bound")
+    ax[1].plot(gamma_max_arr, w0_err, "-b", label=r"$|w_0 - \hat{w}_0|$")
+    ax[1].plot(gamma_max_arr, w0_err_bound, "--r", label=r"$\sqrt{N}\bar{\Gamma}$")
     ax[1].set_yscale("log")
+    ax[1].set_xlabel(r"$\bar{\Gamma}$")
     ax[1].legend()
     plt.show()
 
 
 def main() -> None:
     N = 12
-    # bat_type = "small"
-    bat_type = "large"
-    consts = _get_lompc_consts(bat_type)
+    ev_type = "small"
+    # ev_type = "large"
+    consts = _get_lompc_consts(ev_type)
     lompc = LoMPC(N, consts)
 
     _print_lompc_solve_time(N, consts, lompc)
-    _plot_unpriced_energy_consumption(N, consts, lompc)
-    _check_robustness_bounds(N, consts, lompc)
+    _plot_unpriced_electricity_consumption(N, consts, lompc)
+    _check_error_bounds(N, consts, lompc)
 
 
 if __name__ == "__main__":

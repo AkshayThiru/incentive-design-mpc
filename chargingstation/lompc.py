@@ -5,39 +5,37 @@ import cvxpy as cv
 import numpy as np
 
 from chargingstation.settings import (LOMPC_SOLVER, MAX_BAT_CHARGE_RATE,
-                                      MAX_MAX_BAT_CHARGE, MIN_MAX_BAT_CHARGE,
+                                      MAX_MAX_BAT_SOC, MIN_MAX_BAT_SOC,
                                       PRINT_LEVEL)
 
 
 @dataclass
 class LoMPCConstants:
     """
-    delta:      Relative weight of tracking cost.
+    delta:      Relative weight of charging cost.
     theta:      Battery capacity [kWh].
-    s_max:      Maximum allowed fraction of battery charge.
-    w_max:      Maximum fraction of charge replenished per timestep.
-    bat_type:   Battery type, either "small" or "large".
+    y_max:      Maximum allowed state of charge (SoC) as a fraction of capacity.
+    w_max:      Maximum fraction of charge replenished per time step (normalized charging rate).
+    ev_type:    EV type, either "small" or "large".
     """
 
     delta: float
     theta: float
-    s_max: float
+    y_max: float
     w_max: float
-    bat_type: str
+    ev_type: str
 
 
 class LoMPC:
     def __init__(self, N: int, consts: LoMPCConstants) -> None:
         """
         Inputs:
-            N:      Horizon length.
+            N:      LoMPC horizon length.
             consts: LoMPC constants.
         """
-        assert (consts.s_max >= MIN_MAX_BAT_CHARGE) and (
-            consts.s_max <= MAX_MAX_BAT_CHARGE
-        )
+        assert (consts.y_max >= MIN_MAX_BAT_SOC) and (consts.y_max <= MAX_MAX_BAT_SOC)
         assert (consts.w_max >= 0) and (consts.w_max <= MAX_BAT_CHARGE_RATE)
-        assert (consts.bat_type == "small") or (consts.bat_type == "large")
+        assert (consts.ev_type == "small") or (consts.ev_type == "large")
         self._set_constants(N, consts)
 
         self._set_cvx_variables()
@@ -50,7 +48,7 @@ class LoMPC:
         self.price = 0
         self.cost = 0
         self._set_cvx_bat_degradation_cost(consts)
-        self._set_cvx_tracking_cost()
+        self._set_cvx_charging_cost()
         self._set_cvx_prices()
 
         self.prob = cv.Problem(cv.Minimize(self.cost), self.cons)
@@ -62,20 +60,20 @@ class LoMPC:
         self.N = N
         self.delta = consts.delta
         self.theta = consts.theta
-        self.s_max = consts.s_max
+        self.y_max = consts.y_max
         self.w_max = consts.w_max
-        # Scaling factor for the quadratic price cost.
+        # Scaling factor for the quadratic electricity cost.
         self.q_scale = 3 * self.theta / (4 * self.w_max)
         # LoMPC input matrix, y = A w.
         self.A = np.tril(np.ones((self.N, self.N)))
         # Strong convexity modulus.
-        self.m_sc = 2 * self.delta * self.theta**2
+        self.m = 2 * self.delta * self.theta**2
 
     def _set_cvx_variables(self) -> None:
         self.w = cv.Variable(self.N, nonneg=True)
 
     def _set_cvx_parameters(self) -> None:
-        # Price (incentive) parameters.
+        # Unit electricity price (incentive) parameters.
         self.lmbd = cv.Parameter(3 * self.N, nonneg=True)
         # Additional robustness parameter.
         self.lmbd_r = cv.Parameter(nonneg=True)
@@ -85,7 +83,7 @@ class LoMPC:
     def _update_cvx_parameters(
         self, lmbd: np.ndarray, lmbd_r: float, gamma: float
     ) -> None:
-        assert gamma <= self.s_max
+        assert gamma <= self.y_max
         self.lmbd.value = lmbd
         self.lmbd_r.value = lmbd_r
         self.gamma.value = gamma
@@ -94,7 +92,7 @@ class LoMPC:
         self.cons += [self.w <= self.w_max]
 
     def _set_cvx_bat_degradation_cost(self, consts: LoMPCConstants) -> None:
-        if consts.bat_type == "small":
+        if consts.ev_type == "small":
             self._set_cvx_small_bat_degradation_cost()
         else:
             self._set_cvx_large_bat_degradation_cost()
@@ -114,7 +112,7 @@ class LoMPC:
         )
         self.cost += (self.theta * self.w_max) ** 2 * pwl
 
-    def _set_cvx_tracking_cost(self) -> None:
+    def _set_cvx_charging_cost(self) -> None:
         y = self.A @ self.w
         self.cost += (
             self.delta
@@ -140,7 +138,7 @@ class LoMPC:
     ) -> tuple[np.ndarray, float]:
         """
         Inputs:
-            lmbd:   Price vector.
+            lmbd:   Unit price (incentive) vector.
             lmbd_r: Robustness price parameter.
             gamma:  Fraction of battery capacity remaining to be charged.
         Outputs:
@@ -156,7 +154,7 @@ class LoMPC:
         return w_opt, cost_opt
 
     def get_sc_modulus(self) -> float:
-        return self.m_sc
+        return self.m
 
     def get_input_mat(self) -> np.ndarray:
         return self.A
