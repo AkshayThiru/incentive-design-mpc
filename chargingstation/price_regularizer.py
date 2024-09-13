@@ -21,7 +21,7 @@ class PriceRegularizer:
         """
         Inputs:
             N:  Horizon length.
-            r:  Price vector length.
+            r:  Unit price (incentive) vector length.
         """
         assert (N >= 0) and (r >= 0)
         self.N = N

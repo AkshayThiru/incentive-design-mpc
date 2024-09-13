@@ -7,7 +7,7 @@ def _print_errors(N: int, A: np.ndarray, c: np.ndarray, reg: PriceRegularizer) -
     nsamples = 1000
     err_feas = 0
     err_comp = 0
-    for i in range(nsamples):
+    for _ in range(nsamples):
         b = 200 * (np.random.random((N,)) - 0.5)
         x_opt = reg.solve_price_regularization(A, b, c)
         err_feas += np.linalg.norm(A @ x_opt - b)
