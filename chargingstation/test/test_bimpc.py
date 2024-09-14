@@ -2,8 +2,8 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
-from chargingstation.bimpc import (BiMPC, BiMPCConstants, BiMPCParameters,
-                                   BiMPCChargingCostType)
+from chargingstation.bimpc import (BiMPC, BiMPCChargingCostType,
+                                   BiMPCConstants, BiMPCParameters)
 from chargingstation.demand_data import medium_term_demand_forecast
 from chargingstation.lompc import LoMPCConstants
 
@@ -74,9 +74,7 @@ def _get_normalized_bimpc_parameters(
     else:
         demand = medium_term_demand_forecast(N, 1 / 4, interpolate=False) / B
     # demand = 0.5 * np.array([0] * (N // 2) + [1] * (N - N // 2))
-    return BiMPCParameters(
-        Mp_s, Mp_l, beta_s, beta_l, gamma_sm, gamma_lm, x0, demand
-    )
+    return BiMPCParameters(Mp_s, Mp_l, beta_s, beta_l, gamma_sm, gamma_lm, x0, demand)
 
 
 def _test_random_EV_distributions(
@@ -150,9 +148,10 @@ def _plot_figure(
         ax[1, 1].plot(t, A @ w_hat_l_opt[p, :] / params.gamma_lm[p])
     ax[1, 1].plot(t, np.ones((N,)), "--")
     ax[1, 1].set_title("Team-optimal battery charge remaining (large EV)")
-    #   Aggregate EV electricity consumption (+ error), external demand.
+    #   Total EV electricity consumption (+ error), external demand.
     w_hat_opt = (
-        consts_s.theta * params.Mp_s @ w_hat_s_opt + consts_l.theta * params.Mp_l @ w_hat_l_opt
+        consts_s.theta * params.Mp_s @ w_hat_s_opt
+        + consts_l.theta * params.Mp_l @ w_hat_l_opt
     )
     error_bound = (
         consts_s.theta * params.Mp_s @ params.beta_s
@@ -196,9 +195,7 @@ def _plot_figure(
     )
     ax[2, 1].plot(t, consts_bi.x_max * np.ones((N,)), "--b")
     ax[2, 1].legend()
-    ax[2, 1].set_title(
-        "Total supply, electricity generated, storage battery charge"
-    )
+    ax[2, 1].set_title("Total supply, electricity generated, storage battery charge")
 
     plt.show()
 

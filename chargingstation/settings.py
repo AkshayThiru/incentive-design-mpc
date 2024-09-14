@@ -30,4 +30,4 @@ MAX_INITIAL_SOC = 0.5  # y_{min, 2}.
 # EVs leave after this fraction of y_max is reached.
 MIN_FULL_CHARGE_FRACTION = 0.95
 
-ADD_RESIDUAL_CHARGE_TO_BATTERY = True
+ADD_RESIDUAL_CHARGE_TO_BATTERY = False

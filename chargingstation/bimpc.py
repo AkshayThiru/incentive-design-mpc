@@ -153,7 +153,9 @@ class BiMPC:
         self.gamma_lm = cv.Parameter(self.P, nonneg=True)
         # Initial battery charge.
         # self.x0 = cv.Parameter(nonneg=True)
-        self.x0 = (cv.Parameter())  # Due to numerical errors, x0 can become slightly negative.
+        self.x0 = (
+            cv.Parameter()
+        )  # Due to numerical errors, x0 can become slightly negative.
         # External demand for the next time horizon.
         self.demand = cv.Parameter(self.N, nonneg=True)
         # Dependent parameters.
@@ -195,7 +197,9 @@ class BiMPC:
         )
         e1 = np.zeros((self.N,))
         e1[0] = 1
-        delta_err = self.theta_s * self.Mp_dot_beta_s + self.theta_l * self.Mp_dot_beta_l
+        delta_err = (
+            self.theta_s * self.Mp_dot_beta_s + self.theta_l * self.Mp_dot_beta_l
+        )
         # Maximum discharge rate constraint.
         self.cons += [u_b_hat - delta_err * e1 >= -self.u_b_max]
         # Maximum charge rate constraint.
@@ -208,7 +212,9 @@ class BiMPC:
             - self.theta_s * self.Mp_s @ self.w_hat_s
             - self.theta_l * self.Mp_l @ self.w_hat_l
         ) + self.x0 * np.ones((self.N,))
-        delta_err = self.theta_s * self.Mp_dot_beta_s + self.theta_l * self.Mp_dot_beta_l
+        delta_err = (
+            self.theta_s * self.Mp_dot_beta_s + self.theta_l * self.Mp_dot_beta_l
+        )
         # Battery storage lower bound constraint.
         self.cons += [x_hat - delta_err * np.ones((self.N,)) >= 0]
         # Battery storage upper bound constraint.
@@ -273,9 +279,7 @@ class BiMPC:
             u_g_opt:        Team-optimal electricity generation.
         """
         assert (params.Mp_s.shape == (self.P,)) and (params.Mp_l.shape == (self.P,))
-        assert (params.beta_s.shape == (self.P,)) and (
-            params.beta_l.shape == (self.P,)
-        )
+        assert (params.beta_s.shape == (self.P,)) and (params.beta_l.shape == (self.P,))
         assert (params.gamma_sm.shape == (self.P,)) and (
             params.gamma_lm.shape == (self.P,)
         )

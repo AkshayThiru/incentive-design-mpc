@@ -1,8 +1,8 @@
 import csv
 from pathlib import Path
 
-import numpy as np
 import matplotlib as mpl
+import numpy as np
 from matplotlib import pyplot as plt
 
 mpl.rcParams["mathtext.fontset"] = "cm"
