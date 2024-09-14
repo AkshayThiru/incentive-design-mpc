@@ -71,7 +71,7 @@ class PriceSolver:
         assert len(y0.shape) == 1
         self.nEVs = len(y0)
         self.y0 = y0
-        self.y0_rng = (np.max(self.y0) - np.min(self.y0)) / 2
+        self.y0_rng = (np.max(self.y0) - np.min(self.y0)) / 2 # = \bar{\Gamma}
         self.gamma_sc = self.consts.y_max - (np.max(self.y0) + np.min(self.y0)) / 2
 
     def compute_optimal_prices(
@@ -165,7 +165,7 @@ class PriceSolver:
         }
         return lmbd_k, solver_stats
 
-    def get_gamma(self) -> float:
+    def get_gamma_sc(self) -> float:
         return self.gamma_sc
 
     def get_robustness_bounds(self, lmbd_r: float) -> tuple[float, float]:

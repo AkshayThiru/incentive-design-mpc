@@ -2,7 +2,11 @@ import csv
 from pathlib import Path
 
 import numpy as np
+import matplotlib as mpl
 from matplotlib import pyplot as plt
+
+mpl.rcParams["mathtext.fontset"] = "cm"
+mpl.rcParams["font.family"] = "STIXGeneral"
 
 
 def _get_csv_data() -> list:
@@ -37,7 +41,7 @@ def main() -> None:
     hours = 48
     demand = medium_term_demand_forecast(hours, 1 / 4, interpolate=False)
     demand_interp = medium_term_demand_forecast(hours, 1 / 4, interpolate=True)
-    _, ax = plt.subplots(1)
+    _, ax = plt.subplots(1, layout="constrained")
     ax.plot(np.arange(len(demand)), demand, "-b", label="uninterpolated")
     ax.plot(
         np.arange(len(demand_interp)) / 2, demand_interp, "-r", label="interpolated"

@@ -107,12 +107,12 @@ def _test_robustness_parameter() -> None:
 
 
 def main() -> None:
-    # _test_single_EV()
+    _test_single_EV()
     _test_multiple_EVs()
 
-    # _test_horizon_length()
+    _test_horizon_length()
 
-    # _test_robustness_parameter()
+    _test_robustness_parameter()
 
 
 if __name__ == "__main__":
