@@ -43,10 +43,7 @@ def _plot_graphs(logs: dict) -> None:
         logs["statistics"]["ncharged_l"],
     )
     # Price solver iterations.
-    niter_s, niter_l = (
-        logs["statistics"]["niter_s"],
-        logs["statistics"]["niter_l"],
-    )
+    niter_s, niter_l = (logs["statistics"]["niter_s"], logs["statistics"]["niter_l"])
     niter_s = niter_s[niter_s >= 1]
     niter_l = niter_l[niter_l >= 1]
 
@@ -105,12 +102,10 @@ def _plot_graphs(logs: dict) -> None:
     x_hat[0] = x0
     x_hat[1:] = x[:-1] + u_hat_b[:-1]
     u_hat_b_bi_min = np.max(
-        (u_hat_b[:Tf] - err_w_s[:Tf] - err_w_l[:Tf], -u_b_max * np.ones((Tf,))),
-        axis=0,
+        (u_hat_b[:Tf] - err_w_s[:Tf] - err_w_l[:Tf], -u_b_max * np.ones((Tf,))), axis=0
     )
     u_hat_b_max = np.min(
-        (u_hat_b[:Tf] + err_w_s[:Tf] + err_w_l[:Tf], u_b_max * np.ones((Tf,))),
-        axis=0,
+        (u_hat_b[:Tf] + err_w_s[:Tf] + err_w_l[:Tf], u_b_max * np.ones((Tf,))), axis=0
     )
     x_hat_min = np.max(((x_hat - err_w_s - err_w_l)[:Tf], np.zeros((Tf))), axis=0)
     x_hat_max = np.min(
@@ -126,10 +121,18 @@ def _plot_graphs(logs: dict) -> None:
     price_before_reg_l = avg_price_l + np.sum(Mp_l * price_red_l, axis=0) / M_2
 
     ### Statistics.
-    ncharged_s_max = M_2 * (Tf - 1) / ((consts_s.y_max - MIN_INITIAL_SOC) / consts_s.w_max)
-    ncharged_l_max = M_2 * (Tf - 1) / ((consts_l.y_max - MIN_INITIAL_SOC) / consts_l.w_max)
-    print(f"# small robots charged: {ncharged_s:6d}, ({100 * ncharged_s / ncharged_s_max:6.2f}%)")
-    print(f"# large robots charged: {ncharged_l:6d}, ({100 * ncharged_l / ncharged_l_max:6.2f}%)")
+    ncharged_s_max = (
+        M_2 * (Tf - 1) / ((consts_s.y_max - MIN_INITIAL_SOC) / consts_s.w_max)
+    )
+    ncharged_l_max = (
+        M_2 * (Tf - 1) / ((consts_l.y_max - MIN_INITIAL_SOC) / consts_l.w_max)
+    )
+    print(
+        f"# small robots charged: {ncharged_s:6d}, ({100 * ncharged_s / ncharged_s_max:6.2f}%)"
+    )
+    print(
+        f"# large robots charged: {ncharged_l:6d}, ({100 * ncharged_l / ncharged_l_max:6.2f}%)"
+    )
 
     print(f"Average # iterations for small robots: {np.mean(niter_s):7.2f}")
     print(f"Average # iterations for large robots: {np.mean(niter_l):7.2f}")
@@ -271,13 +274,7 @@ def _plot_graphs(logs: dict) -> None:
     ax.plot(t, x_hat[:Tf], "--r", lw=1, label=r"$\hat{x}$")
     ax.plot(t, x_max * np.ones((Tf,)), "-.b", lw=1, label=r"$x_\text{max}$")
     ax.fill_between(
-        t,
-        x_hat_min,
-        x_hat_max,
-        alpha=0.1,
-        color="r",
-        lw=1,
-        label="error\nbound",
+        t, x_hat_min, x_hat_max, alpha=0.1, color="r", lw=1, label="error\nbound"
     )
     ax.grid(axis="y", lw=0.25, alpha=0.5)
     ax.set_xlabel(r"time $\ (\text{hrs})$", **font_dict)

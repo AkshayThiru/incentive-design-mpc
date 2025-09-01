@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 import numpy as np
+import time
 
 from chargingstation.bimpc import BiMPC, BiMPCConstants, BiMPCParameters
 from chargingstation.lompc import LoMPCConstants
@@ -124,9 +125,7 @@ class ChargingStation:
             "w_hat_l": np.zeros((self.P, self.Tf)),
             "u_g": np.zeros((self.Tf,)),
         }
-        self.logs["states"] = {
-            "x": np.zeros((self.Tf,)),
-        }
+        self.logs["states"] = {"x": np.zeros((self.Tf,))}
         self.logs["bounds"] = {
             "beta_s": np.zeros((self.P, self.Tf)),
             "beta_l": np.zeros((self.P, self.Tf)),
@@ -162,11 +161,17 @@ class ChargingStation:
         # (Optional) Feasibility conditon for kappa.
         lmbd_r = 0
         #   Compute BiMPC solution.
+        start_time = time.time()
         w_hat_s, w_hat_l, u_g, stats_bi = self._get_bimpc_solution(lmbd_r)
+        end_time = time.time()
+        # print(f"BiMPC setup + solve time: {end_time - start_time:.6f} s")
         # Compute prices from PriceSolver.
+        start_time = time.time()
         prices_s, prices_l, stats_s, stats_l = self._get_optimal_prices(
             w_hat_s, w_hat_l, lmbd_r
         )
+        end_time = time.time()
+        # print(f"Optimal incentive (price) setup + solve time: {end_time - start_time:.6f} s\n")
         # Get w0 and price paid by LoMPCs.
         w0_s, w0_l, price0_s, price0_l = self._get_w0_price0(prices_s, prices_l, lmbd_r)
         # Update logs.

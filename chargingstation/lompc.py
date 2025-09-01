@@ -68,7 +68,7 @@ class LoMPC:
         # LoMPC input matrix, y = A w.
         self.A = np.tril(np.ones((self.N, self.N)))
         # Strong convexity modulus.
-        self.m = 2 * self.delta * self.theta**2
+        self.m = 2 * self.delta * self.theta ** 2
 
     def _set_cvx_variables(self) -> None:
         self.w = cv.Variable(self.N, nonneg=True)
@@ -102,7 +102,7 @@ class LoMPC:
         # w_lim = 1.5 * self.w_max
         # scale = (self.theta * w_lim) ** 2
         # self.cost += -scale * cv.sum(cv.log(1 - cv.square(self.w / w_lim)))
-        self.cost += self.theta**2 * cv.sum_squares(self.w / 0.9)
+        self.cost += self.theta ** 2 * cv.sum_squares(self.w / 0.9)
 
     def _set_cvx_large_bat_degradation_cost(self) -> None:
         w_rel = self.w / self.w_max
@@ -117,7 +117,7 @@ class LoMPC:
         y = self.A @ self.w
         self.cost += (
             self.delta
-            * self.theta**2
+            * self.theta ** 2
             * (cv.sum_squares(y) - 2 * self.gamma * cv.sum(y))
         )
 
@@ -130,7 +130,7 @@ class LoMPC:
         # Quadratic prices.
         q_price = self.q_scale * self.lmbd[2 * self.N :] @ cv.square(self.w)
         # Robustness prices.
-        r_price = self.lmbd_r * self.theta**2 * cv.sum_squares(self.w)
+        r_price = self.lmbd_r * self.theta ** 2 * cv.sum_squares(self.w)
         self.price = l_price + q_price + r_price
         self.cost += self.price
 
@@ -150,6 +150,7 @@ class LoMPC:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             self.prob.solve(solver=LOMPC_SOLVER, warm_start=True, max_iter=int(1e5))
+        # print(f"LoMPC solution time: {self.prob.solver_stats.solve_time:.6f} s")
         w_opt = self.w.value
         cost_opt = self.cost.value
         return w_opt, cost_opt
@@ -164,7 +165,7 @@ class LoMPC:
         price0 = (
             self.theta * (w[0] * lmbd[0] + (self.w_max - w[0]) * lmbd[self.N])
             + self.q_scale * w[0] ** 2 * lmbd[2 * self.N]
-            + self.theta**2 * w[0] ** 2 * lmbd_r
+            + self.theta ** 2 * w[0] ** 2 * lmbd_r
         )
         return price0
 

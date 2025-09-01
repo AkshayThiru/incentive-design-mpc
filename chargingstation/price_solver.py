@@ -2,6 +2,7 @@ import warnings
 
 import cvxpy as cv
 import numpy as np
+import time
 
 from chargingstation.lompc import LoMPC, LoMPCConstants
 from chargingstation.price_regularizer import PriceRegularizer
@@ -106,6 +107,7 @@ class PriceSolver:
         dual_cost_decrease_ac = []
         dual_cost_decrease_pred = []
         # Gradient descent till convergence:
+        start_time = time.time()
         for iter in range(MAX_PRICE_SOLVER_ITERATIONS):
             w_err_max, _, w_avg_err = self._get_w_err(lmbd_k, lmbd_r, w_ref, A_bar)
             if PRINT_LEVEL >= 2:
@@ -136,10 +138,15 @@ class PriceSolver:
             dual_cost_decrease_pred.append(dual_cost_derease)
             dual_cost = dual_cost_new
             lmbd_k = lmbd_k_new
+        end_time = time.time()
+        # print(f"Optimal incentive (price) computation time: {end_time - start_time:.6f} s")
         # Regularize prices.
+        start_time = time.time()
         price_pre = self.lompc.phi(w_k) @ lmbd_k
         lmbd_k[: self.r] = self._regularize_prices(w_k, lmbd_k[: self.r])
         price_new = self.lompc.phi(w_k) @ lmbd_k
+        end_time = time.time()
+        # print(f"Incentive (price) regularization time: {end_time - start_time:.6f} s")
         if PRINT_LEVEL >= 1:
             w_k_, _ = self.lompc.solve_lompc(lmbd_k, lmbd_r, self.gamma_sc)
             w_err_max, w0_err, w_avg_err = self._get_w_err(lmbd_k, lmbd_r, w_ref, A_bar)
@@ -232,6 +239,7 @@ class PriceSolver:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             self.prob.solve(solver=PRICE_SOLVER_SOLVER, warm_start=True)
+        # print(f"Conic problem solution time: {self.prob.solver_stats.solve_time:.6f} s")
         lmbd_next = self.lmbd.value
         dual_cost_new = self.cost.value
         dual_cost_decrease = dual_cost - dual_cost_new

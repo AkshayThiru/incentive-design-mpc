@@ -152,10 +152,7 @@ def _plot_dual_cost_decrease_large_robots(consts: ChargingStationConstants) -> N
     # ax.plot(np.arange(niter), np.zeros((niter,)), "--k", lw=1)
     ax.grid(axis="y", lw=0.25, alpha=0.5)
     ax.set_xlabel(r"number of iterations", **font_dict)
-    ax.set_ylabel(
-        r"dual cost decrease" "\n" r"per iteration $\ ()$",
-        **font_dict,
-    )
+    ax.set_ylabel(r"dual cost decrease" "\n" r"per iteration $\ ()$", **font_dict)
     ax.legend(
         loc="upper right",
         fontsize=font_size,

@@ -180,10 +180,7 @@ class BiMPC:
         self.Mp_times_gamma_lm.value = params.Mp_l * params.gamma_lm
 
     def _set_cvx_w_constraints(self) -> None:
-        self.cons += [
-            self.w_hat_s <= self.w_max_s,
-            self.w_hat_l <= self.w_max_l,
-        ]
+        self.cons += [self.w_hat_s <= self.w_max_s, self.w_hat_l <= self.w_max_l]
 
     def _set_cvx_electricity_generation_constraints(self) -> None:
         self.cons += [self.u_g <= self.u_g_max]
@@ -236,10 +233,10 @@ class BiMPC:
     def _set_cvx_weighted_charging_cost(self) -> None:
         charging_cost = 0
         for p in range(self.P):
-            charging_cost += self.theta_s**2 * cv.sum_squares(
+            charging_cost += self.theta_s ** 2 * cv.sum_squares(
                 self.A @ self.w_hat_s[p, :] * self.Mp_s[p] - self.Mp_times_gamma_sm[p]
             )
-            charging_cost += self.theta_l**2 * cv.sum_squares(
+            charging_cost += self.theta_l ** 2 * cv.sum_squares(
                 self.A @ self.w_hat_l[p, :] * self.Mp_l[p] - self.Mp_times_gamma_lm[p]
             )
         self.cost += self.delta * charging_cost
@@ -288,6 +285,7 @@ class BiMPC:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             self.prob.solve(solver=BIMPC_SOLVER, warm_start=True)
+        # print(f"BiMPC solve time: {self.prob.solver_stats.solve_time:.6f} s")
         w_hat_s_opt = self.w_hat_s.value
         w_hat_l_opt = self.w_hat_l.value
         u_g_opt = self.u_g.value

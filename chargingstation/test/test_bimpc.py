@@ -89,15 +89,7 @@ def _test_random_EV_distributions(
         charging_cost_type=BiMPCChargingCostType.EXP_UNWEIGHTED
     )
     params = _get_normalized_bimpc_parameters(
-        N,
-        P,
-        M_s,
-        M_l,
-        consts_s,
-        consts_l,
-        random_Mp,
-        random_gamma,
-        early_peak_demand,
+        N, P, M_s, M_l, consts_s, consts_l, random_Mp, random_gamma, early_peak_demand
     )
     print(f"Small EV distribution: {np.round(params.Mp_s / np.sum(params.Mp_s), 4)}")
     print(f"Large EV distribution: {np.round(params.Mp_l / np.sum(params.Mp_l), 4)}")
